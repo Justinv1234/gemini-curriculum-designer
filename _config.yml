@@ -1,6 +1,6 @@
 theme: jekyll-theme-minimal
 title: Gemini Curriculum Designer
 description: An AI-powered instructional design assistant for the Gemini CLI.
+theme: jekyll-theme-cayman
 show_downloads: true
-google_analytics:
-remote_theme:
+google_analytics: # You can add a tracking ID here if you want to see student traffic
