@@ -1,0 +1,30 @@
+{
+  "name": "@weihaoqu/curriculum-designer-skill",
+  "version": "1.0.1",
+  "description": "Helps teachers and instructional designers create a structured curriculum or teaching plan from a list of topics or a specification document. Use when the user wants to design course materials, lesson plans, or a syllabus.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "files": [
+    "SKILL.md",
+    "references/"
+  ],
+  "keywords": [
+    "gemini-skill",
+    "gemini-cli",
+    "curriculum",
+    "teaching",
+    "education",
+    "lesson-plan",
+    "instructional-design",
+    "ai-agent"
+  ],
+  "author": "Weihao Qu",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weihaoqu/cs336-course-design.git",
+    "directory": "curriculum-designer"
+  }
+}

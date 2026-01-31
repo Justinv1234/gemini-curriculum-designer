@@ -1,0 +1,28 @@
+{
+  "tools": [
+    {
+      "name": "design_curriculum_module",
+      "description": "Designs a single curriculum module for a given topic. The workflow is to first propose prerequisite topics and core concepts for the user to approve, then generate a detailed lesson plan based on their feedback.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "type": "string",
+            "description": "The main topic for the curriculum module to be designed. For example: 'Static Taint Analysis for Web Vulnerabilities'."
+          },
+          "user_selected_prerequisites": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "A list of prerequisite topics that the user has confirmed are necessary for this module. This is the result of a previous conversational step."
+          },
+          "user_selected_core_concepts": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "A list of core concepts that the user has confirmed should be the focus of the module. This is the result of a previous conversational step."
+          }
+        },
+        "required": ["topic", "user_selected_prerequisites", "user_selected_core_concepts"]
+      }
+    }
+  ]
+}
