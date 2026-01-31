@@ -1,6 +1,6 @@
 {
   "name": "@weihaoqu/curriculum-designer-skill",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Helps teachers and instructional designers create a structured curriculum or teaching plan from a list of topics or a specification document. Use when the user wants to design course materials, lesson plans, or a syllabus.",
   "main": "index.js",
   "scripts": {
