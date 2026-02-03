@@ -11,6 +11,15 @@ The `curriculum-designer` is a powerful agentic skill for the **Gemini CLI**. It
 
 ## 📦 Installation & Setup
 
+### 0. Prerequisites
+Before you begin, ensure you have **Node.js** and the **Gemini CLI** installed.
+
+1.  **Install Node.js:** Download and install the latest LTS version from [nodejs.org](https://nodejs.org/). This includes `npm`.
+2.  **Install Gemini CLI:**
+    ```bash
+    npm install -g @google/gemini-cli
+    ```
+
 ### 1. Install the Skill
 You can install this skill globally via NPM.
 
@@ -22,7 +31,11 @@ npm install -g @weihaoqu/curriculum-designer-skill
 Tell your Gemini agent to use the installed skill.
 
 ```bash
-gemini skills install @weihaoqu/curriculum-designer-skill --scope user
+# Option A: From your local NPM installation
+gemini skills install $(npm root -g)/@weihaoqu/curriculum-designer-skill --scope user
+
+# Option B: Directly from GitHub
+gemini skills install https://github.com/weihaoqu/gemini-curriculum-designer --scope user
 ```
 
 ### 3. Verify Installation
