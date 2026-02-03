@@ -31,10 +31,10 @@ npm install -g @weihaoqu/curriculum-designer-skill
 Tell your Gemini agent to use the installed skill.
 
 ```bash
-# Option A: From your local NPM installation
+# Option A: From your local NPM installation (Best for Mac)
 gemini skills install $(npm root -g)/@weihaoqu/curriculum-designer-skill --scope user
 
-# Option B: Directly from GitHub
+# Option B: Directly from GitHub (Works for Windows & Mac)
 gemini skills install https://github.com/weihaoqu/gemini-curriculum-designer --scope user
 ```
 
