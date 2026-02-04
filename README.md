@@ -252,6 +252,27 @@ For programmatic use with the Claude API, the repository includes:
 
 You can use these with the **Anthropic Workbench** or Claude API directly.
 
+## Changelog
+
+### v1.1.0 (2025-02-03)
+
+**New Features:**
+- **Claude Code Support** - Full compatibility with `AskUserQuestion`, `WebSearch`, and other Claude Code tools
+- **Mode A: Enhance Existing Materials** - Analyze existing courses, research what's changed, apply targeted updates
+- **Assessment Templates** - Complete templates for quizzes, labs, projects, and peer reviews with rubrics
+- **Delivery Templates** - Production-ready templates for slides, Jupyter notebooks, LMS packages, video scripts, and GitHub repos
+
+**Improvements:**
+- Streamlined workflow with complete module proposals instead of piecemeal questions
+- Proactive topic research before curriculum design
+- Changelog tracking for course updates
+
+### v1.0.x
+
+- Initial release for Gemini CLI
+- Basic curriculum design workflow
+- Prerequisite and core concept analysis
+
 ## License
 
 MIT
