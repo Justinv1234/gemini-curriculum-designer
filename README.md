@@ -57,21 +57,7 @@ If you are already in a chat session, reload the skills:
 
 #### Install the Skill
 
-**Method 1: From NPM (Recommended)**
-```bash
-npm install -g @weihaoqu/curriculum-designer-skill
-claude mcp add curriculum-designer -- npx -y @anthropic-ai/mcp-server-filesystem $(npm root -g)/@weihaoqu/curriculum-designer-skill
-```
-
-**Method 2: Add as a Project Skill**
-
-Copy the `SKILL.md` file to your project's `.claude/skills/` directory:
-```bash
-mkdir -p .claude/skills
-curl -o .claude/skills/curriculum-designer.md https://raw.githubusercontent.com/weihaoqu/gemini-curriculum-designer/main/SKILL.md
-```
-
-**Method 3: Add as a User Skill**
+**Method 1: User Skill (Recommended - works in all projects)**
 
 Copy to your user skills directory:
 ```bash
@@ -79,10 +65,18 @@ mkdir -p ~/.claude/skills
 curl -o ~/.claude/skills/curriculum-designer.md https://raw.githubusercontent.com/weihaoqu/gemini-curriculum-designer/main/SKILL.md
 ```
 
-#### Verify Installation
-Start Claude Code and type:
+**Method 2: Project Skill (works only in specific project)**
+
+Copy the `SKILL.md` file to your project's `.claude/skills/` directory:
+```bash
+mkdir -p .claude/skills
+curl -o .claude/skills/curriculum-designer.md https://raw.githubusercontent.com/weihaoqu/gemini-curriculum-designer/main/SKILL.md
 ```
-/curriculum-designer
+
+#### Verify Installation
+Start a new Claude Code session and the skill will be available. You can ask:
+```
+Help me design a curriculum for [your topic]
 ```
 
 ---
