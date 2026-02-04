@@ -57,20 +57,24 @@ If you are already in a chat session, reload the skills:
 
 #### Install the Skill
 
-**Method 1: User Skill (Recommended - works in all projects)**
+**Method 1: Via NPM (Recommended)**
 
-Copy to your user skills directory:
+```bash
+npm install -g @weihaoqu/curriculum-designer-skill
+```
+
+The skill is automatically installed to `~/.claude/skills/` during npm install.
+
+If you need to reinstall manually:
+```bash
+curriculum-designer-install
+```
+
+**Method 2: Manual Download**
+
 ```bash
 mkdir -p ~/.claude/skills
 curl -o ~/.claude/skills/curriculum-designer.md https://raw.githubusercontent.com/weihaoqu/gemini-curriculum-designer/main/SKILL.md
-```
-
-**Method 2: Project Skill (works only in specific project)**
-
-Copy the `SKILL.md` file to your project's `.claude/skills/` directory:
-```bash
-mkdir -p .claude/skills
-curl -o .claude/skills/curriculum-designer.md https://raw.githubusercontent.com/weihaoqu/gemini-curriculum-designer/main/SKILL.md
 ```
 
 #### Verify Installation
@@ -247,6 +251,11 @@ For programmatic use with the Claude API, the repository includes:
 You can use these with the **Anthropic Workbench** or Claude API directly.
 
 ## Changelog
+
+### v1.1.1 (2025-02-03)
+
+- **Easy Install for Claude Code** - Running `npm install -g` now automatically installs the skill to `~/.claude/skills/`
+- Added `curriculum-designer-install` command for manual reinstallation
 
 ### v1.1.0 (2025-02-03)
 

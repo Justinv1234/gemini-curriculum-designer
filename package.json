@@ -1,14 +1,19 @@
 {
   "name": "@weihaoqu/curriculum-designer-skill",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Helps teachers and instructional designers create a structured curriculum or teaching plan from a list of topics or a specification document. Use when the user wants to design course materials, lesson plans, or a syllabus.",
   "main": "index.js",
+  "bin": {
+    "curriculum-designer-install": "./scripts/install-claude.js"
+  },
   "scripts": {
+    "postinstall": "node scripts/install-claude.js || true",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "files": [
     "SKILL.md",
-    "references/"
+    "references/",
+    "scripts/"
   ],
   "keywords": [
     "gemini-skill",
