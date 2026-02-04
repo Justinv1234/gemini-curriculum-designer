@@ -1,133 +1,256 @@
-# Gemini Curriculum Designer Skill
+# Curriculum Designer Skill
 
 [![npm version](https://img.shields.io/npm/v/@weihaoqu/curriculum-designer-skill.svg)](https://www.npmjs.com/package/@weihaoqu/curriculum-designer-skill)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **Turn your rough course ideas into structured curriculums and technical delivery plans.**
 
-The `curriculum-designer` is a powerful agentic skill for the **Gemini CLI**. It acts as an expert instructional designer, interviewing you to build high-quality educational content and then generating the technical roadmap to build it.
+The `curriculum-designer` is a powerful agentic skill for **Gemini CLI** and **Claude Code**. It acts as an expert instructional designer, interviewing you to build high-quality educational content and then generating the technical roadmap to build it.
 
 ---
 
 ## 📦 Installation & Setup
 
-### 0. Prerequisites
-Before you begin, ensure you have **Node.js** and the **Gemini CLI** installed.
+Choose your platform below:
 
-1.  **Install Node.js:** Download and install the latest LTS version from [nodejs.org](https://nodejs.org/). This includes `npm`.
+### Option A: Gemini CLI
+
+#### Prerequisites
+1.  **Install Node.js:** Download and install the latest LTS version from [nodejs.org](https://nodejs.org/).
 2.  **Install Gemini CLI:**
     ```bash
     npm install -g @google/gemini-cli
     ```
 
-### 1. Install the Skill
-You can install this skill globally via NPM.
-
+#### Install the Skill
 ```bash
 npm install -g @weihaoqu/curriculum-designer-skill
 ```
 
-### 2. Register with Gemini CLI
-Tell your Gemini agent to use the installed skill.
-
+#### Register with Gemini CLI
 ```bash
-# Option A: From your local NPM installation (Best for Mac)
+# From your local NPM installation (Best for Mac)
 gemini skills install $(npm root -g)/@weihaoqu/curriculum-designer-skill --scope user
 
-# Option B: Directly from GitHub (Works for Windows & Mac)
+# Or directly from GitHub (Works for Windows & Mac)
 gemini skills install https://github.com/weihaoqu/gemini-curriculum-designer --scope user
 ```
 
-### 3. Verify Installation
-To confirm the skill is active, run the list command:
-
+#### Verify Installation
 ```bash
 gemini skills list
 ```
 *You should see `curriculum-designer` in the output.*
 
-### 4. Activate in Session
-If you are already in a chat session, you must reload the skills to use the new one:
-
+#### Activate in Session
+If you are already in a chat session, reload the skills:
 ```
 /skills reload
 ```
 
 ---
 
-## 🧠 Step-by-Step Workflow
+### Option B: Claude Code
 
-The skill guides you through a rigorous design process for every module in your course. Here is exactly what happens when you use it.
+#### Prerequisites
+1.  **Install Claude Code:** Follow the installation guide at [claude.ai/claude-code](https://claude.ai/claude-code).
 
-### Step 1: Topic Discovery
-You simply provide the high-level topic.
-> **User:** "I want to teach a module on Deterministic Finite Automata."
+#### Install the Skill
 
-### Step A: Prerequisites Analysis
-The agent analyzes your topic and automatically suggests a list of potential foundational concepts needed to understand it. It then asks you how to handle each one.
-> **Agent:** "For DFA, what about Set Theory? Formal Languages? Graph Theory?"
-> **User:** `b, i, a`
-> *   **b (Briefly Cover):** Do a quick recap.
-> *   **i (Include):** Teach this as a full preliminary lesson.
-> *   **a (Assume Known):** Skip it; students should already know this.
+**Method 1: From NPM (Recommended)**
+```bash
+npm install -g @weihaoqu/curriculum-designer-skill
+claude mcp add curriculum-designer -- npx -y @anthropic-ai/mcp-server-filesystem $(npm root -g)/@weihaoqu/curriculum-designer-skill
+```
 
-### Step B: Core Concept Refinement
-The agent proposes the core learning objectives for the module. You refine the depth of coverage for each.
-> **Agent:** "Should we cover the Formal 5-tuple Definition? The Subset Construction Algorithm?"
-> **User:** `e, c, s`
-> *   **e (Emphasize):** This is critical. Spend extra time/slides on it.
-> *   **c (Cover):** Teach it normally.
-> *   **s (Skip):** Remove this from the curriculum.
+**Method 2: Add as a Project Skill**
 
-### Step C: Teaching Plan & Activities
-The agent synthesizes your choices into a structured Lesson Plan. It then suggests **Active Learning Activities** tailored to the content.
-> **Agent:** "For the 'Visualizing DFAs' lesson, should we add a 'Draw-your-own' workshop?"
-> **User:** "Yes, and add a group critique session."
+Copy the `SKILL.md` file to your project's `.claude/skills/` directory:
+```bash
+mkdir -p .claude/skills
+curl -o .claude/skills/curriculum-designer.md https://raw.githubusercontent.com/weihaoqu/gemini-curriculum-designer/main/SKILL.md
+```
 
-*The agent writes the detailed plan to `teaching-plan.md`.*
+**Method 3: Add as a User Skill**
 
-### Step D: Delivery & Implementation Strategy
-Once the educational content is defined, the skill shifts focus to **Delivery**. It acts as a CTO/Lead Developer to help you build the course materials.
-> **Agent:** "Now that we have the plan, how do you want to deliver it? A Web App? Slides? Notebooks?"
-> **User:** "An Interactive Web App."
+Copy to your user skills directory:
+```bash
+mkdir -p ~/.claude/skills
+curl -o ~/.claude/skills/curriculum-designer.md https://raw.githubusercontent.com/weihaoqu/gemini-curriculum-designer/main/SKILL.md
+```
 
-The agent generates a `delivery-plan.md` containing:
-*   **Tech Stack:** (e.g., Next.js, React Flow, Tailwind).
-*   **Asset List:** (e.g., "Need JSON schema for DFA definition").
-*   **Development Roadmap:** A step-by-step guide to coding the application.
+#### Verify Installation
+Start Claude Code and type:
+```
+/curriculum-designer
+```
+
+---
+
+## 🧠 How It Works
+
+The skill adapts to your situation—whether creating from scratch or enhancing existing materials.
+
+### Two Modes
+
+```
+Agent: What would you like to do?
+
+       [Create new curriculum from scratch]
+       [Enhance existing course materials]
+       [Update outdated content with latest practices]
+       [Add new delivery format to existing curriculum]
+```
+
+---
+
+### Mode A: Enhance Existing Materials
+
+Already have a course? The skill becomes your **upgrade assistant**:
+
+```
+User: "I have slides from my 2022 Python course. Help me update it."
+
+Agent: [Reads your existing materials]
+       [Analyzes content inventory]
+       [Researches what's changed since 2022]
+
+       ## Course Analysis
+       ✅ Current: Data types, functions, OOP basics
+       ⚠️ Needs update: Package management (pip → uv/poetry)
+       ❌ Outdated: Python 3.8 examples (now at 3.12)
+       💡 Missing: Type hints, async/await, match statements
+
+       ## What's New in Python (2024-2025)
+       🆕 Pattern matching is now widely adopted
+       🆕 Type hints are expected in production code
+       ⚠️ setup.py is deprecated; use pyproject.toml
+
+       Which enhancements would you like?
+       [Update outdated content] [Add new modules] [Refresh examples]
+       [Add new delivery format] [Enhance assessments]
+```
+
+---
+
+### Mode B: Create New Curriculum
+
+Starting fresh? The skill researches, designs, and builds:
+
+```
+User: "I want to create a course on Kubernetes for DevOps engineers."
+
+Agent: [Researches latest K8s trends, tools, certifications]
+
+       ## Topic Landscape: Kubernetes (2025)
+       Current Trends: GitOps, Platform Engineering, AI/ML workloads
+       Essential Tools: Helm, ArgoCD, Crossplane
+       Certifications: CKA, CKAD, CKS
+
+       [Proposes complete modules with lessons, activities, assessments]
+       [Approve] [Modify] [Start over]
+```
+
+---
+
+### Assessment Design
+
+The skill generates **complete, ready-to-use assessments**:
+
+| Type | What You Get |
+|------|--------------|
+| **Quizzes** | Questions, answer keys, explanations, rubrics |
+| **Labs** | Instructions, starter code, grading criteria, solutions |
+| **Projects** | Milestones, deliverables, detailed rubrics |
+| **Peer Reviews** | Structured feedback forms, evaluation criteria |
+
+```
+Agent: Generated assessments.md with:
+       - 5 module quizzes (20 questions each)
+       - 4 hands-on labs with autograder tests
+       - 1 midterm project with milestone rubrics
+       - 1 capstone with peer review forms
+```
+
+---
+
+### Delivery Templates
+
+Choose your format and get **production-ready templates**:
+
+| Format | What's Generated |
+|--------|-----------------|
+| **Slide Decks** | Reveal.js/Markdown slides with speaker notes |
+| **Jupyter Notebooks** | Interactive notebooks with exercises and solutions |
+| **LMS Package** | Canvas/Moodle-ready export structure |
+| **Video Scripts** | Full scripts with timestamps, visuals, B-roll cues |
+| **GitHub Repo** | Complete course repository structure |
+
+```
+Agent: Which delivery formats do you need?
+       [Interactive Web App] [Slide Decks] [Jupyter Notebooks]
+       [LMS Package] [Video Scripts] [GitHub Repository]
+
+User: Slides + Jupyter Notebooks
+
+Agent: [Generates slide deck for each module]
+       [Creates interactive notebooks with exercises]
+       [Provides setup instructions for both]
+```
 
 ---
 
 ## 🏆 Case Study: Building the "CS336 Portal"
 
-We used this exact skill to build a complete course on **Program Analysis for Security & Privacy**.
+We used this skill to build a complete course on **Program Analysis for Security & Privacy**.
 
 ### The Challenge
 We needed to teach complex topics like **Static Taint Analysis**, **Symbolic Execution**, and **Control-Flow Integrity** to advanced students.
 
 ### The Process
-1.  **Curriculum Generation:** We used the Step A-C workflow to define 9 rigorous modules, choosing to *Emphasize* formal logic while *Briefly Covering* basic coding skills.
-2.  **Content Enrichment:** The skill researched "Deep Dive" explanations for every key takeaway, generating rich analogies (e.g., comparing Control-Flow Graphs to subway maps).
-3.  **Delivery Planning (Step D):** We chose to build a web portal. The skill generated a roadmap for a **Next.js + Monaco Editor + React Flow** platform.
+1.  **Research & Planning:** The skill researched current program analysis tools and techniques, suggesting we include modern frameworks like CodeQL alongside traditional theory.
+2.  **Curriculum Design:** Approved 9 rigorous modules with rich content—the skill generated complete lesson plans with explanations, exercises, and assessments.
+3.  **Implementation:** Chose "Interactive Web App" delivery. The skill generated the full tech stack (Next.js + Monaco Editor + React Flow) and helped build interactive components.
 
 ### The Result
-Using the plans generated by this skill, we implemented a fully functional educational portal.
+A fully functional educational portal with:
+- Interactive code visualizations
+- Hands-on labs (Lattice Visualizer, Cache Simulator)
+- Complete curriculum content
 
-👉 **View the Live Implementation Code:** [github.com/weihaoqu/paprojectsimplementation](https://github.com/weihaoqu/paprojectsimplementation)
-
-*The repository above contains the Next.js application, the custom interactive labs (Lattice Visualizer, Cache Simulator), and the curriculum data—all architected by this skill.*
+👉 **View the Implementation:** [github.com/weihaoqu/paprojectsimplementation](https://github.com/weihaoqu/paprojectsimplementation)
 
 ---
 
-## 🛠️ Cross-Platform Support (Claude)
+## 🛠️ Platform-Specific Features
 
-This skill isn't just for Gemini. We believe in agentic interoperability.
+### Claude Code (Recommended)
 
-The repository includes:
+Claude Code unlocks the full potential of this skill:
+
+| Feature | How It Works |
+|---------|--------------|
+| **Smart Questions** | Uses `AskUserQuestion` for structured, clickable choices |
+| **Topic Research** | Uses `WebSearch` to find latest trends, tools, and resources |
+| **Material Analysis** | Reads and analyzes your existing course files |
+| **Complete Proposals** | Presents full module designs for approval, not piecemeal questions |
+| **Assessment Generation** | Creates quizzes, labs, projects with rubrics and solutions |
+| **Delivery Templates** | Generates slides, notebooks, LMS packages, video scripts |
+| **Implementation** | Actually builds your course—creates files, writes code, sets up projects |
+
+### Gemini CLI
+
+- Uses shorthand notation for quick responses (`i`, `b`, `a`, `e`, `c`, `s`)
+- Text-based interview flow
+- Research features depend on available tools
+
+### Claude API (Advanced)
+
+For programmatic use with the Claude API, the repository includes:
 *   `claude_tool_definition.json`: A JSON schema defining the curriculum design tool.
 *   `claude_system_prompt.md`: A system prompt containing the pedagogical logic.
 
-You can paste these into the **Anthropic Workbench** or use them with the Claude API to replicate this powerful workflow with Claude models.
+You can use these with the **Anthropic Workbench** or Claude API directly.
 
 ## License
 
