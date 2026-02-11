@@ -43,5 +43,5 @@ When proposing enhancements:
 - Rate impact as high/medium/low based on learning outcome improvement
 - Ensure changes maintain pedagogical coherence with the existing curriculum`;
 
-export const MODEL = "claude-sonnet-4-20250514";
+export const MODEL = "us.anthropic.claude-sonnet-4-20250514-v1:0";
 export const MAX_TOKENS = 8192;

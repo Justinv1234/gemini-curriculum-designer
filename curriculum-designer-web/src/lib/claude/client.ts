@@ -1,11 +1,11 @@
-import Anthropic from "@anthropic-ai/sdk";
+import AnthropicBedrock from "@anthropic-ai/bedrock-sdk";
 
-let client: Anthropic | null = null;
+let client: AnthropicBedrock | null = null;
 
-export function getAnthropicClient(): Anthropic {
+export function getAnthropicClient(): AnthropicBedrock {
   if (!client) {
-    client = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
+    client = new AnthropicBedrock({
+      awsRegion: process.env.AWS_REGION || "us-east-1",
     });
   }
   return client;
