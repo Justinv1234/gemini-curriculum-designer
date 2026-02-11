@@ -9,12 +9,19 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
-FROM node:20-alpine
+FROM node:20-slim
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+
+# Install @napi-rs/canvas linux binary for pdf-parse (DOMMatrix support)
+COPY package*.json ./
+RUN npm install --os=linux --cpu=x64 @napi-rs/canvas && \
+    cp -r node_modules/@napi-rs ./node_modules/ 2>/dev/null || true && \
+    rm -rf package*.json
+
 EXPOSE 3000
 USER node
 CMD ["node", "server.js"]
