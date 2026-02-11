@@ -105,16 +105,17 @@ curriculum-designer-web/
 │   │   │   ├── ConceptsStep.tsx       # Step 2: concept cards with priority toggles
 │   │   │   └── LessonsStep.tsx        # Step 3: lesson/activity cards with toggles
 │   │   ├── enhance/                   # Enhancement flow components
-│   │   │   ├── FileUpload.tsx         # Drop zone with 200KB limit, PDF/DOCX extraction
-│   │   │   ├── AnalysisReportView.tsx # Summary cards, inventory table, gap badges
+│   │   │   ├── FileUpload.tsx         # Drop zone with 2MB limit, PDF/DOCX extraction
+│   │   │   ├── AnalysisReportView.tsx # Interactive: gap action cycling, strength toggles, custom gaps
+│   │   │   ├── WhatsNewCardList.tsx   # Expandable/selectable cards for What's New items
 │   │   │   ├── EnhancementSelector.tsx # Multi-select proposal cards with impact badges
-│   │   │   ├── ChangeReviewCard.tsx   # Before/after display with approve/reject
+│   │   │   ├── ChangeReviewCard.tsx   # Before/after display with approve/reject/regenerate-with-feedback
 │   │   │   └── ChangelogView.tsx      # Categorized changelog entries
 │   │   └── shared/
 │   │       ├── MarkdownRenderer.tsx   # react-markdown with GFM + syntax highlighting
 │   │       ├── StreamingText.tsx      # Shows content + blinking cursor while streaming
 │   │       ├── EditableTab.tsx        # Shared edit/view toggle for review tabs
-│   │       └── ExportButtons.tsx      # Download Markdown .zip / PDF .zip
+│   │       └── ExportButtons.tsx      # Download Markdown .zip / Slides .html
 │   │
 │   ├── lib/
 │   │   ├── claude/                   # Prompt engineering layer
@@ -127,7 +128,7 @@ curriculum-designer-web/
 │   │   │   └── delivery.ts          # Phase 4 prompt builder
 │   │   ├── export/
 │   │   │   ├── markdown.ts          # Bundle .md files into .zip (JSZip)
-│   │   │   └── pdf.ts              # Markdown → HTML → PDF (html2pdf.js)
+│   │   │   └── slides.ts           # Markdown → self-contained HTML slide deck
 │   │   ├── parsers.ts               # JSON block extraction from AI responses
 │   │   ├── hooks/
 │   │   │   └── useStreaming.ts      # Reusable SSE streaming hook
@@ -156,7 +157,7 @@ Here's the data flow for a typical interaction:
 3. **API route** (`route.ts`) reads the request body → calls a prompt builder (`lib/claude/research.ts`) to construct the Claude prompt → calls `client.messages.stream()` → pipes tokens back as SSE
 4. **`useStreaming` hook** reads the SSE stream token-by-token → updates `content` state → React re-renders `StreamingText` component
 5. **When stream ends** → final content saved to Zustand store → persisted to localStorage
-6. **On export** → `ExportButtons` reads all content from store → `markdown.ts` bundles into .zip or `pdf.ts` converts and bundles
+6. **On export** → `ExportButtons` reads all content from store → `markdown.ts` bundles into .zip or `slides.ts` generates a self-contained HTML slide deck
 
 ---
 
@@ -201,13 +202,15 @@ Here's the data flow for a typical interaction:
 
 **Why not WebSockets?** Overkill. SSE is one-directional (server → client), which is exactly what we need. It works over regular HTTP, no special server setup. WebSockets would add complexity for zero benefit here.
 
-### JSZip + html2pdf.js (Export)
+### JSZip + HTML Slide Deck (Export)
 
-**What it is:** JSZip creates .zip files in the browser. html2pdf.js converts HTML to PDF in the browser.
+**What it is:** JSZip creates .zip files in the browser for Markdown export. The slide deck export generates a **self-contained HTML file** that works as an interactive presentation.
 
 **Why client-side?** No server resources needed. The user's browser does all the work. This means export works even if the server is down (as long as they have cached content). It also avoids sending potentially large documents back through our servers.
 
-**The PDF pipeline is clever but janky:** We take Markdown → convert to basic HTML with a regex-based parser → wrap in styled HTML → feed to html2pdf.js → get a blob → put it in the zip. The regex Markdown parser is NOT a full parser — it handles headers, bold, code blocks, tables, and lists, but complex nested Markdown might look weird. For the MVP, it's good enough. If quality becomes an issue, we'd swap in a proper server-side Markdown → PDF pipeline.
+**Why slides instead of PDF?** We originally used `html2pdf.js` for PDF export, but it kept crashing on modern CSS color functions (oklch/lab) that shadcn/ui generates. The regex-based Markdown→HTML conversion also produced mediocre formatting. Rather than continuing to patch a fragile PDF pipeline, we replaced it with a self-contained HTML slide deck that's actually more useful — you can present it in meetings, share it as a file, and it works offline in any browser.
+
+**How the slide deck works:** `slides.ts` takes the same `ExportFile[]` array that Markdown export uses, splits each file's content at `# ` headings (section dividers) and `## ` headings (content slides), converts the markdown body to HTML with a regex parser, and wraps everything in a single HTML file with embedded CSS + JS. The resulting file has keyboard navigation (arrow keys, Home/End), a progress bar, slide counter, clickable table of contents, and clean typography. No external dependencies — open the `.html` file in any browser and present.
 
 ---
 
@@ -309,27 +312,27 @@ Tabbed view showing all 4 output documents:
 - **Delivery** — the delivery templates
 - **Resources** — the topic landscape from Phase 1
 
-Each tab has an "Edit" button that swaps the Markdown preview for a raw textarea. The export buttons create .zip files with all documents in either Markdown or PDF format.
+Each tab has an "Edit" button that swaps the Markdown preview for a raw textarea. The export buttons create either a Markdown .zip or an interactive HTML slide deck.
 
 ### The Enhancement Flow (Mode B)
 
 The landing page now presents **two cards** — "Create New Curriculum" and "Enhance Existing Curriculum." Each sets the `mode` in the Zustand store and navigates to the appropriate flow. The enhancement flow mirrors the create flow's wizard structure but with different steps:
 
-**Step 1 — Analyze Materials:** The user uploads curriculum files (.md, .txt, .pdf, .docx) via a drop zone. Files have a 200KB per-file limit. Text files are read client-side via `FileReader`; PDFs and DOCX files are sent to a server-side extraction API route using `pdf-parse` (v2, class-based API) and `mammoth`. Once uploaded, clicking "Analyze" sends all file contents to the `/api/enhance/analyze` route — this is the **only** step that sends raw file contents. The response streams in (SSE) and includes a `json-analysis` tagged block with a structured `AnalysisReport` (course name, inventory, gaps, strengths). After streaming, the structured report renders as summary cards, an inventory table with status badges, and color-coded gaps/strengths.
+**Step 1 — Analyze Materials:** The user uploads curriculum files (.md, .txt, .pdf, .docx) via a drop zone. Files have a **2MB per-file limit**. Text files are read client-side via `FileReader`; PDFs and DOCX files are sent to a server-side extraction API route using `pdf-parse` (v2, class-based API) and `mammoth`. Once uploaded, clicking "Analyze" sends all file contents to the `/api/enhance/analyze` route — this is the **only** step that sends raw file contents. The response streams in (SSE) and includes a `json-analysis` tagged block with a structured `AnalysisReport` (course name, inventory, gaps, strengths). After streaming, the structured report renders as summary cards, an inventory table, and **interactive** gaps/strengths — each gap has a clickable badge cycling through "include → defer → skip" to control what downstream steps focus on. Strengths toggle between "keep" and "de-emphasize." Users can also **add custom gaps** via an input at the bottom.
 
-**Step 2 — What's New:** Takes only the structured `AnalysisReport` (not raw files!) and sends it to `/api/enhance/whats-new`. Claude researches recent developments relevant to the curriculum's gaps. Pure SSE-streamed markdown.
+**Step 2 — What's New:** Takes only the structured `AnalysisReport` (not raw files!) and sends it to `/api/enhance/whats-new`. The prompt filters gaps by their action — only "include" gaps are primary, "defer" gaps are lower priority, "skip" gaps are omitted. The response streams in and includes a `json-whatsnew` tagged block. After streaming, the raw markdown is swapped for **expandable, selectable cards** (`WhatsNewCardList`) — each card shows a title, summary, category badge, and expandable details. Users can toggle card selection to control which findings feed into Step 3. Falls back to raw StreamingText if JSON parsing fails.
 
-**Step 3 — Enhancement Proposals:** Sends the `AnalysisReport` + what's-new content to `/api/enhance/propose`. Returns a JSON array of `EnhancementProposal` objects with categories, impact ratings, and descriptions. The UI shows them as selectable cards — high-impact proposals are pre-selected. User toggles selections and clicks "Apply Selected."
+**Step 3 — Enhancement Proposals:** Sends the `AnalysisReport` + what's-new content (or selected `WhatsNewItem`s if available) to `/api/enhance/propose`. Returns a JSON array of `EnhancementProposal` objects with categories, impact ratings, and descriptions. The UI shows them as selectable cards — high-impact proposals are pre-selected. User toggles selections and clicks "Apply Selected."
 
-**Step 4 — Apply Changes:** For each selected proposal, the UI sequentially calls `/api/enhance/update` (SSE streaming). Each response generates before/after content + a `json-change` block. Changes appear as `ChangeReviewCard` components with approve/reject buttons. Approved changes automatically add entries to the changelog.
+**Step 4 — Apply Changes:** **Auto-triggers on mount** (no button click needed). For each selected proposal, the UI sequentially calls `/api/enhance/update` (SSE streaming). Each response generates before/after content + a `json-change` block. Changes appear as `ChangeReviewCard` components with approve/reject buttons. **Rejecting** a change now reveals a feedback textarea + "Regenerate with Feedback" button — the feedback is injected into the prompt and the change is regenerated with the user's guidance. Approved changes automatically add entries to the changelog.
 
-**Enhance Review:** Four tabs — Analysis, What's New, Changes (approved only), Changelog. Same `EditableTab` component and `ExportButtons` as the create flow, but exports enhancement-specific files.
+**Enhance Review:** Four tabs — Analysis, What's New, Changes (approved only), Changelog. Each of the first three tabs now shows a **structured view by default** (AnalysisReportView, WhatsNewCardList, individual ChangeReviewCards) with a toggle to switch to "Edit Raw" mode. This makes the review page much easier to scan.
 
 **Key architectural decisions:**
 - **Payload efficiency:** Only the analyze step sends raw file contents. Steps 2-4 work from the structured `AnalysisReport`, keeping API payloads small (~1KB vs 50KB+).
 - **Mode isolation:** `setMode()` clears the other mode's state to prevent stale cross-mode data.
 - **localStorage safety:** `uploadedFiles` are excluded from Zustand persistence via `partialize` to avoid hitting the 5MB localStorage limit.
-- **Chained migration:** Store version bumped from 1→2 with `if (version < 1) ... if (version < 2) ...` pattern so users migrating from v0 still get both migrations applied.
+- **Chained migration:** Store version bumped to 3 with `if (version < 1) ... if (version < 2) ... if (version < 3) ...` pattern so users migrating from any version get all migrations applied. v3 adds action fields to gaps/strengths and `whatsNewItems`.
 
 ---
 
@@ -423,7 +426,7 @@ This is a pattern experienced engineers use for any AI-integrated app: **separat
 
 1. **localStorage has a ~5MB limit.** A curriculum with many long modules could hit it. If this happens, consider IndexedDB or compressing the stored data.
 
-2. **The PDF export regex parser is basic.** Deeply nested lists, images, or complex table formatting will look wrong. If users complain about PDF quality, swap in a server-side Markdown-to-PDF library (like `md-to-pdf` or Puppeteer).
+2. **The slide deck's Markdown parser is regex-based.** It handles headers, bold, italic, code blocks, tables, and lists — but deeply nested or complex Markdown might look off. If slide quality becomes an issue, consider swapping in a proper Markdown parser like `marked` or `markdown-it`.
 
 3. **Rate limiting is in-memory.** Serverless deployments (like AWS Lambda) spin up multiple instances, each with their own rate limit map. For real protection, use Redis or API Gateway throttling.
 
@@ -431,18 +434,15 @@ This is a pattern experienced engineers use for any AI-integrated app: **separat
 
 5. **Claude model is hardcoded.** If you want to test with a cheaper/faster model, change `MODEL` in `lib/claude/prompts.ts`. Consider making this an environment variable for easy switching between dev (Haiku) and production (Sonnet).
 
-### 8. The oklch/lab PDF Export Crash
+### 8. Why We Replaced PDF Export with HTML Slides
 
-**The bug:** Clicking "Download PDF" crashed with `Attempting to parse an unsupported color function "lab"`. The error came from `html2canvas` (used by `html2pdf.js`), which can't parse modern CSS color functions like `oklch()` and `lab()`.
+**The bug that killed PDF:** `html2pdf.js` crashed with `Attempting to parse an unsupported color function "lab"` because `html2canvas` can't handle modern CSS color functions (oklch/lab) that shadcn/ui v3 + Tailwind v4 generates. We patched it with forced hex colors and isolated containers, but it remained fragile.
 
-**The root cause:** shadcn/ui v3 + Tailwind v4 generates CSS custom properties using `oklch()` color space (e.g., `--primary: oklch(0.205 0 0)`). When html2pdf.js renders HTML to a canvas for PDF conversion, html2canvas tries to compute all CSS colors and chokes on anything that isn't hex/rgb/hsl.
+**The real problem:** Even when PDF worked, the output was mediocre. A regex-based Markdown→HTML converter feeding into html2canvas → jsPDF is just... not a great pipeline. Tables looked weird, code blocks were cramped, and the whole thing was brittle.
 
-**The fix:** In `pdf.ts`, the PDF export container is fully isolated from the page CSS:
-1. Inline `style.cssText` on the container forces white background and standard colors
-2. `wrapInHtmlDoc` uses ONLY hex colors (`#1a1a1a`, `#2563eb`, etc.) with `!important` to override any inherited oklch values
-3. `html2canvas` gets an explicit `backgroundColor: "#ffffff"`
+**The solution:** Replace the entire PDF pipeline with a self-contained HTML slide deck generator (`slides.ts`). Instead of converting Markdown to PDF (lossy, fragile), we convert Markdown to HTML slides (lossless, robust). The resulting `.html` file is a single file with embedded CSS and JS — no external dependencies, works offline, keyboard navigable.
 
-**The lesson:** If you're using modern CSS color functions (oklch, lab, lch, color()) in your UI framework, any tool that parses CSS client-side (html2canvas, dom-to-image, etc.) may not support them. Always use legacy color formats for generated HTML that leaves your app's rendering pipeline.
+**The lesson:** Sometimes the right fix isn't patching a broken tool — it's replacing it with a fundamentally better approach. HTML slide decks are more useful than PDFs for the curriculum design use case anyway: you can present them to committees, they look great on any screen, and they're searchable.
 
 ### 9. React useState Doesn't Reset on Prop Changes
 
@@ -498,3 +498,21 @@ partialize: (state) => {
 **The fix:** Use chained `if (version < 1) ... if (version < 2) ...` (no `else`). This way, a v0 user gets both migrations applied sequentially.
 
 **The lesson:** Database migrations use the same principle — each migration is applied independently and in order. Never use else/switch for version migrations unless you're certain users can only upgrade one version at a time.
+
+### 13. User Agency > Automation (The UX Improvements Pattern)
+
+**The situation:** The enhance flow worked but felt like a passive reading experience. Users couldn't control what the AI focused on — every gap was treated equally, What's New was an unstructured wall of text, and rejecting a change just deleted it.
+
+**The fix (a pattern, not a single change):**
+
+1. **Add action states to data:** Instead of making gaps binary (exists/doesn't), we added `action: "include" | "defer" | "skip"` to `GapItem`. This is a common pattern — attach user-decision metadata to data objects rather than creating separate selection arrays.
+
+2. **Dual output (again!):** We already used the "readable markdown + tagged JSON block" pattern for analysis. We applied the same pattern to What's New, adding `json-whatsnew` blocks. This let us show expandable cards while keeping the raw markdown as a fallback.
+
+3. **Reject ≠ Delete:** When a user rejects something, they usually want it *different*, not gone. Adding a feedback textarea to the reject flow means reject → feedback → regenerate, which is much more useful than reject → gone. The feedback gets injected into the prompt as a "User Feedback" section.
+
+4. **Auto-trigger expensive steps:** Step 4 used to require clicking "Generate All Updates." Since the user already explicitly selected proposals in Step 3, there's no ambiguity — just start generating on mount using `useEffect` + `useRef` guard.
+
+5. **Structured views for review:** The review page used raw markdown for everything, which was hard to scan. Reusing the same interactive components (AnalysisReportView, WhatsNewCardList, ChangeReviewCard) in `readOnly` mode gives a much better overview without duplicating code.
+
+**The lesson:** When you build an AI-powered workflow, ask yourself at each step: "What does the user want to control here?" Then add just enough interactivity to give them that control. The gap action cycling (click to cycle include → defer → skip) follows the same pattern we already used for prerequisites (include → recap → skip) — borrowing existing UX patterns within your own app keeps things consistent.

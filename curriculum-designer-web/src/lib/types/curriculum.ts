@@ -11,6 +11,7 @@ export interface TrendItem {
   id: string;
   name: string;
   description: string;
+  included: boolean;
 }
 
 export interface ToolItem {
@@ -18,6 +19,7 @@ export interface ToolItem {
   name: string;
   description: string;
   category?: string;
+  included: boolean;
 }
 
 export interface ResourceItem {
@@ -26,6 +28,7 @@ export interface ResourceItem {
   type: string; // "book" | "course" | "website" | etc.
   description: string;
   url?: string;
+  included: boolean;
 }
 
 export interface TopicLandscape {
@@ -163,6 +166,7 @@ export interface CurriculumActions {
   setAssessmentsContent: (content: string) => void;
   setSelectedDeliveryFormats: (formats: DeliveryFormat[]) => void;
   setDeliveryContent: (content: string) => void;
+  toggleLandscapeItem: (category: "trends" | "tools" | "resources", id: string) => void;
   setCurrentPhase: (phase: Phase) => void;
   reset: () => void;
 }
@@ -187,15 +191,21 @@ export interface ContentInventoryItem {
   status: ContentStatus;
 }
 
+export type GapAction = "include" | "defer" | "skip";
+
 export interface GapItem {
   id: string;
   type: "missing" | "outdated" | "opportunity";
   description: string;
+  action: GapAction;
 }
+
+export type StrengthAction = "keep" | "de-emphasize";
 
 export interface StrengthItem {
   id: string;
   description: string;
+  action: StrengthAction;
 }
 
 export interface AnalysisReport {
@@ -206,6 +216,22 @@ export interface AnalysisReport {
   contentInventory: ContentInventoryItem[];
   gaps: GapItem[];
   strengths: StrengthItem[];
+}
+
+export type WhatsNewCategory =
+  | "recent-developments"
+  | "industry-trends"
+  | "updated-resources"
+  | "pedagogical-updates";
+
+export interface WhatsNewItem {
+  id: string;
+  title: string;
+  summary: string;
+  details: string;
+  category: WhatsNewCategory;
+  selected: boolean;
+  expanded: boolean;
 }
 
 export type EnhancementCategory =
@@ -239,6 +265,7 @@ export interface ChangeItem {
   before?: string;
   after: string;
   status: ChangeStatus;
+  feedback?: string;
 }
 
 export interface ChangelogEntry {
@@ -254,6 +281,7 @@ export interface EnhancementState {
   analysisReportRaw: string | null;
   analysisReportStructured: AnalysisReport | null;
   whatsNewContent: string | null;
+  whatsNewItems: WhatsNewItem[] | null;
   enhancementProposals: EnhancementProposal[];
   changes: ChangeItem[];
   changelog: ChangelogEntry[];
@@ -267,11 +295,18 @@ export interface EnhancementActions {
   removeUploadedFile: (id: string) => void;
   setAnalysisReportRaw: (content: string) => void;
   setAnalysisReportStructured: (report: AnalysisReport | null) => void;
+  updateGapAction: (id: string, action: GapAction) => void;
+  updateStrengthAction: (id: string, action: StrengthAction) => void;
+  addCustomGap: (description: string, type: GapItem["type"]) => void;
   setWhatsNewContent: (content: string) => void;
+  setWhatsNewItems: (items: WhatsNewItem[]) => void;
+  toggleWhatsNewItemSelection: (id: string) => void;
+  toggleWhatsNewItemExpanded: (id: string) => void;
   setEnhancementProposals: (proposals: EnhancementProposal[]) => void;
   toggleProposalSelection: (id: string) => void;
   setChanges: (changes: ChangeItem[]) => void;
   updateChange: (id: string, updates: Partial<ChangeItem>) => void;
+  setChangeFeedback: (id: string, feedback: string) => void;
   addChangelogEntry: (entry: ChangelogEntry) => void;
   setChangelog: (entries: ChangelogEntry[]) => void;
   setEnhancePhase: (phase: Phase) => void;

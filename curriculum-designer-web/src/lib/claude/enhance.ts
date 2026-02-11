@@ -1,4 +1,4 @@
-import type { UploadedFile, AnalysisReport, EnhancementProposal } from "@/lib/types/curriculum";
+import type { UploadedFile, AnalysisReport, EnhancementProposal, WhatsNewItem } from "@/lib/types/curriculum";
 
 /**
  * Build a prompt to analyze uploaded curriculum files.
@@ -75,33 +75,51 @@ export function buildWhatsNewPrompt(analysisReport: AnalysisReport): string {
     .map((item) => `- ${item.moduleName} (${item.status}, ~${item.estimatedRecency}): ${item.topicsCovered.join(", ")}`)
     .join("\n");
 
-  const gapSummary = analysisReport.gaps
+  const primaryGaps = analysisReport.gaps.filter((g) => g.action === "include");
+  const deferredGaps = analysisReport.gaps.filter((g) => g.action === "defer");
+
+  const gapSummary = primaryGaps
     .map((g) => `- [${g.type}] ${g.description}`)
     .join("\n");
+
+  const deferredSummary = deferredGaps.length > 0
+    ? `\n\nLower priority gaps (address if relevant):\n${deferredGaps.map((g) => `- [${g.type}] ${g.description}`).join("\n")}`
+    : "";
 
   return `I have an existing curriculum for "${analysisReport.courseName}" with ${analysisReport.moduleCount} modules at the ${analysisReport.depth} level (${analysisReport.format} format).
 
 Here is the content inventory:
 ${inventorySummary}
 
-Identified gaps:
-${gapSummary}
+Primary gaps to address:
+${gapSummary || "(none selected)"}${deferredSummary}
 
-Please research and provide a comprehensive "What's New" report covering:
+Please research and provide a comprehensive "What's New" report. For each finding, provide a title, a brief summary, and detailed content.
 
-## Recent Developments
-What has changed in the field since the curriculum was last updated? Include new tools, frameworks, methodologies, and best practices.
+Focus especially on areas where the curriculum has gaps or outdated content. Be specific and actionable — mention exact tools, versions, and resources by name.
 
-## Industry Trends
-Current industry trends that should be reflected in the curriculum.
+---
 
-## Updated Resources
-New or updated learning resources (books, courses, tools) that have emerged.
+**IMPORTANT — After all the readable content above, append this structured JSON block exactly as shown (it will be parsed by the app):**
 
-## Pedagogical Updates
-Any new teaching approaches or educational technology relevant to this subject.
+\`\`\`json-whatsnew
+[
+  {
+    "title": "Finding title",
+    "summary": "One-sentence summary",
+    "details": "Full markdown details with examples, links, and specifics",
+    "category": "recent-developments|industry-trends|updated-resources|pedagogical-updates"
+  }
+]
+\`\`\`
 
-Focus especially on areas where the curriculum has gaps or outdated content. Be specific and actionable — mention exact tools, versions, and resources by name.`;
+Categories:
+- "recent-developments": New tools, frameworks, versions, methodologies
+- "industry-trends": Current industry direction and demands
+- "updated-resources": New books, courses, tutorials, documentation
+- "pedagogical-updates": Teaching approaches and educational technology
+
+Aim for 6-12 items across all categories. The JSON must be valid and parseable.`;
 }
 
 /**
@@ -110,26 +128,45 @@ Focus especially on areas where the curriculum has gaps or outdated content. Be 
  */
 export function buildEnhancementProposalsPrompt(
   analysisReport: AnalysisReport,
-  whatsNewContent: string
+  whatsNewContent: string,
+  whatsNewItems?: WhatsNewItem[] | null
 ): string {
   const inventorySummary = analysisReport.contentInventory
     .map((item) => `- ${item.moduleName} (${item.status})`)
     .join("\n");
 
-  const gapSummary = analysisReport.gaps
+  const primaryGaps = analysisReport.gaps.filter((g) => g.action === "include");
+  const deferredGaps = analysisReport.gaps.filter((g) => g.action === "defer");
+
+  const gapSummary = primaryGaps
     .map((g) => `- [${g.type}] ${g.description}`)
     .join("\n");
+
+  const deferredSummary = deferredGaps.length > 0
+    ? `\n\nLower priority gaps:\n${deferredGaps.map((g) => `- [${g.type}] ${g.description}`).join("\n")}`
+    : "";
+
+  // Use selected What's New items if available, otherwise fall back to raw content
+  let researchSection: string;
+  if (whatsNewItems && whatsNewItems.length > 0) {
+    const selectedItems = whatsNewItems.filter((item) => item.selected);
+    researchSection = selectedItems
+      .map((item) => `### ${item.title}\n${item.summary}\n${item.details}`)
+      .join("\n\n");
+  } else {
+    researchSection = whatsNewContent;
+  }
 
   return `Based on the analysis of "${analysisReport.courseName}" and recent research, generate specific enhancement proposals.
 
 Current modules:
 ${inventorySummary}
 
-Identified gaps:
-${gapSummary}
+Primary gaps to address:
+${gapSummary || "(none selected)"}${deferredSummary}
 
 Recent research findings:
-${whatsNewContent}
+${researchSection}
 
 Generate 6-10 specific enhancement proposals. For each proposal, provide:
 - A descriptive title
@@ -158,17 +195,22 @@ Respond with ONLY a JSON object in this exact format (no markdown, no explanatio
 export function buildTargetedUpdatePrompt(
   proposal: EnhancementProposal,
   analysisReport: AnalysisReport,
-  whatsNewContent: string
+  whatsNewContent: string,
+  feedback?: string
 ): string {
   const relevantModules = analysisReport.contentInventory
     .map((item) => `- ${item.moduleName} (${item.status}): ${item.topicsCovered.join(", ")}`)
     .join("\n");
 
+  const feedbackSection = feedback
+    ? `\n\n**User Feedback (please address these concerns):**\n${feedback}\n`
+    : "";
+
   return `I need you to generate a specific curriculum update for the following enhancement:
 
 **Enhancement:** ${proposal.title}
 **Category:** ${proposal.category}
-**Description:** ${proposal.description}
+**Description:** ${proposal.description}${feedbackSection}
 
 **Context — Current curriculum "${analysisReport.courseName}":**
 ${relevantModules}

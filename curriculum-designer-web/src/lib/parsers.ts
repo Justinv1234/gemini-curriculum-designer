@@ -3,6 +3,8 @@ import type {
   SuggestedModule,
   AnalysisReport,
   ChangeItem,
+  WhatsNewItem,
+  WhatsNewCategory,
 } from "@/lib/types/curriculum";
 
 let counter = 0;
@@ -67,6 +69,7 @@ export function parseTopicLandscapeJSON(
           id: generateId(),
           name: t.name ?? "",
           description: t.description ?? "",
+          included: true,
         }))
       : [];
 
@@ -76,6 +79,7 @@ export function parseTopicLandscapeJSON(
           name: t.name ?? "",
           description: t.description ?? "",
           category: t.category,
+          included: true,
         }))
       : [];
 
@@ -86,6 +90,7 @@ export function parseTopicLandscapeJSON(
           type: r.type ?? "resource",
           description: r.description ?? "",
           url: r.url,
+          included: true,
         }))
       : [];
 
@@ -153,6 +158,7 @@ export function parseAnalysisReportJSON(
           id: generateId(),
           type: (g.type ?? "opportunity") as AnalysisReport["gaps"][number]["type"],
           description: g.description ?? "",
+          action: "include" as const,
         }))
       : [];
 
@@ -160,6 +166,7 @@ export function parseAnalysisReportJSON(
       ? raw.strengths.map((s: Record<string, string>) => ({
           id: generateId(),
           description: s.description ?? "",
+          action: "keep" as const,
         }))
       : [];
 
@@ -206,6 +213,42 @@ export function parseChangeJSON(
 }
 
 /**
+ * Parse the structured What's New items from the AI response.
+ * Returns null if JSON block is missing or malformed.
+ */
+const VALID_WHATSNEW_CATEGORIES: WhatsNewCategory[] = [
+  "recent-developments",
+  "industry-trends",
+  "updated-resources",
+  "pedagogical-updates",
+];
+
+export function parseWhatsNewJSON(
+  fullContent: string
+): WhatsNewItem[] | null {
+  const raw = extractJSONBlock(fullContent, "whatsnew");
+  if (!Array.isArray(raw)) return null;
+
+  try {
+    return raw.map((item: Record<string, unknown>) => ({
+      id: generateId(),
+      title: (item.title as string) ?? "",
+      summary: (item.summary as string) ?? "",
+      details: (item.details as string) ?? "",
+      category: VALID_WHATSNEW_CATEGORIES.includes(
+        item.category as WhatsNewCategory
+      )
+        ? (item.category as WhatsNewCategory)
+        : "recent-developments",
+      selected: true,
+      expanded: false,
+    }));
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Remove JSON blocks from the display markdown so they don't clutter the view.
  */
 export function stripJSONBlocks(content: string): string {
@@ -214,6 +257,7 @@ export function stripJSONBlocks(content: string): string {
     .replace(/```json-modules\s*\n[\s\S]*?\n```/gi, "")
     .replace(/```json-analysis\s*\n[\s\S]*?\n```/gi, "")
     .replace(/```json-change\s*\n[\s\S]*?\n```/gi, "")
+    .replace(/```json-whatsnew\s*\n[\s\S]*?\n```/gi, "")
     .replace(/<!--\s*json-landscape\s*-->[\s\S]*?(?:<!--|$)/gi, "")
     .replace(/<!--\s*json-modules\s*-->[\s\S]*?(?:<!--|$)/gi, "")
     .trim();

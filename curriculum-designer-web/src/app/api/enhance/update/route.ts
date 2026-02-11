@@ -6,10 +6,11 @@ import type { AnalysisReport, EnhancementProposal } from "@/lib/types/curriculum
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { proposal, analysisReport, whatsNewContent } = body as {
+    const { proposal, analysisReport, whatsNewContent, feedback } = body as {
       proposal: EnhancementProposal;
       analysisReport: AnalysisReport;
       whatsNewContent: string;
+      feedback?: string;
     };
 
     if (!proposal || !analysisReport || !whatsNewContent) {
@@ -20,7 +21,8 @@ export async function POST(req: Request) {
     const userPrompt = buildTargetedUpdatePrompt(
       proposal,
       analysisReport,
-      whatsNewContent
+      whatsNewContent,
+      feedback
     );
 
     const stream = client.messages.stream({

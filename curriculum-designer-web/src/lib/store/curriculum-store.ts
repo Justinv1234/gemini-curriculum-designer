@@ -12,7 +12,12 @@ import type {
   ChangeItem,
   ChangelogEntry,
   Phase,
+  GapAction,
+  StrengthAction,
+  WhatsNewItem,
+  TopicLandscape,
 } from "@/lib/types/curriculum";
+import { generateId } from "@/lib/parsers";
 
 const initialCreateState: CurriculumState = {
   courseInfo: null,
@@ -35,6 +40,7 @@ const initialEnhanceState: EnhancementState = {
   analysisReportRaw: null,
   analysisReportStructured: null,
   whatsNewContent: null,
+  whatsNewItems: null,
   enhancementProposals: [],
   changes: [],
   changelog: [],
@@ -118,6 +124,19 @@ export const useCurriculumStore = create<CurriculumStore>()(
       setDeliveryContent: (content) => set({ deliveryContent: content }),
       setCurrentPhase: (phase) => set({ currentPhase: phase }),
 
+      toggleLandscapeItem: (category, id) =>
+        set((state) => {
+          if (!state.topicLandscapeStructured) return {};
+          return {
+            topicLandscapeStructured: {
+              ...state.topicLandscapeStructured,
+              [category]: state.topicLandscapeStructured[category].map((item) =>
+                item.id === id ? { ...item, included: !item.included } : item
+              ),
+            },
+          };
+        }),
+
       // --- Enhancement mode actions ---
       setMode: (mode) =>
         set(() => {
@@ -141,8 +160,59 @@ export const useCurriculumStore = create<CurriculumStore>()(
         set({ analysisReportRaw: content }),
       setAnalysisReportStructured: (report: AnalysisReport | null) =>
         set({ analysisReportStructured: report }),
+      updateGapAction: (id: string, action: GapAction) =>
+        set((state) => {
+          if (!state.analysisReportStructured) return {};
+          return {
+            analysisReportStructured: {
+              ...state.analysisReportStructured,
+              gaps: state.analysisReportStructured.gaps.map((g) =>
+                g.id === id ? { ...g, action } : g
+              ),
+            },
+          };
+        }),
+      updateStrengthAction: (id: string, action: StrengthAction) =>
+        set((state) => {
+          if (!state.analysisReportStructured) return {};
+          return {
+            analysisReportStructured: {
+              ...state.analysisReportStructured,
+              strengths: state.analysisReportStructured.strengths.map((s) =>
+                s.id === id ? { ...s, action } : s
+              ),
+            },
+          };
+        }),
+      addCustomGap: (description: string, type: "missing" | "outdated" | "opportunity") =>
+        set((state) => {
+          if (!state.analysisReportStructured) return {};
+          return {
+            analysisReportStructured: {
+              ...state.analysisReportStructured,
+              gaps: [
+                ...state.analysisReportStructured.gaps,
+                { id: generateId(), type, description, action: "include" as const },
+              ],
+            },
+          };
+        }),
       setWhatsNewContent: (content: string) =>
         set({ whatsNewContent: content }),
+      setWhatsNewItems: (items: WhatsNewItem[]) =>
+        set({ whatsNewItems: items }),
+      toggleWhatsNewItemSelection: (id: string) =>
+        set((state) => ({
+          whatsNewItems: state.whatsNewItems?.map((item) =>
+            item.id === id ? { ...item, selected: !item.selected } : item
+          ) ?? null,
+        })),
+      toggleWhatsNewItemExpanded: (id: string) =>
+        set((state) => ({
+          whatsNewItems: state.whatsNewItems?.map((item) =>
+            item.id === id ? { ...item, expanded: !item.expanded } : item
+          ) ?? null,
+        })),
       setEnhancementProposals: (proposals: EnhancementProposal[]) =>
         set({ enhancementProposals: proposals }),
       toggleProposalSelection: (id: string) =>
@@ -158,6 +228,12 @@ export const useCurriculumStore = create<CurriculumStore>()(
             c.id === id ? { ...c, ...updates } : c
           ),
         })),
+      setChangeFeedback: (id: string, feedback: string) =>
+        set((state) => ({
+          changes: state.changes.map((c) =>
+            c.id === id ? { ...c, feedback } : c
+          ),
+        })),
       addChangelogEntry: (entry: ChangelogEntry) =>
         set((state) => ({
           changelog: [...state.changelog, entry],
@@ -170,7 +246,7 @@ export const useCurriculumStore = create<CurriculumStore>()(
     }),
     {
       name: "curriculum-designer-storage",
-      version: 2,
+      version: 4,
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as Record<string, unknown>;
 
@@ -197,6 +273,43 @@ export const useCurriculumStore = create<CurriculumStore>()(
           state.changes = state.changes ?? [];
           state.changelog = state.changelog ?? [];
           state.enhancePhase = state.enhancePhase ?? 0;
+        }
+
+        // v2 → v3: add action fields to gaps/strengths, whatsNewItems
+        if (version < 3) {
+          state.whatsNewItems = state.whatsNewItems ?? null;
+          const report = state.analysisReportStructured as AnalysisReport | null;
+          if (report) {
+            report.gaps = report.gaps.map((g) => ({
+              ...g,
+              action: g.action ?? "include",
+            }));
+            report.strengths = report.strengths.map((s) => ({
+              ...s,
+              action: s.action ?? "keep",
+            }));
+            state.analysisReportStructured = report;
+          }
+        }
+
+        // v3 → v4: add `included` field to landscape items
+        if (version < 4) {
+          const landscape = state.topicLandscapeStructured as TopicLandscape | null;
+          if (landscape) {
+            landscape.trends = landscape.trends.map((t) => ({
+              ...t,
+              included: typeof t.included === "boolean" ? t.included : true,
+            }));
+            landscape.tools = landscape.tools.map((t) => ({
+              ...t,
+              included: typeof t.included === "boolean" ? t.included : true,
+            }));
+            landscape.resources = landscape.resources.map((r) => ({
+              ...r,
+              included: typeof r.included === "boolean" ? r.included : true,
+            }));
+            state.topicLandscapeStructured = landscape;
+          }
         }
 
         return state as unknown as CurriculumStore;

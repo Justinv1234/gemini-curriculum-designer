@@ -30,6 +30,7 @@ export default function Phase1Page() {
     setSuggestedModulesStructured,
     setModules,
     setCurrentPhase,
+    toggleLandscapeItem,
   } = useCurriculumStore();
 
   const [isStreaming, setIsStreaming] = useState(false);
@@ -204,7 +205,10 @@ export default function Phase1Page() {
             <h2 className="text-xl font-semibold mb-4">Topic Landscape</h2>
 
             {showStructuredLandscape ? (
-              <TopicLandscapeView landscape={topicLandscapeStructured} />
+              <TopicLandscapeView
+                landscape={topicLandscapeStructured}
+                onToggle={toggleLandscapeItem}
+              />
             ) : (
               <div className="rounded-lg border p-6 bg-card">
                 <StreamingText

@@ -61,6 +61,13 @@ export function WizardShell({ children }: { children: React.ReactNode }) {
             <span className="md:hidden">&#x21BB;</span>
           </Button>
         </div>
+        <div className="hidden md:block px-3 pb-3">
+          <p className="text-[10px] text-muted-foreground/60 text-center leading-tight">
+            Developed by Dr. Weihao Qu
+            <br />
+            CSSE Dept, Monmouth University
+          </p>
+        </div>
       </aside>
 
       {/* Main content */}

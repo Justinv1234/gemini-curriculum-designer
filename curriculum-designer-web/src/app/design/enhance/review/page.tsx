@@ -1,11 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EditableTab } from "@/components/shared/EditableTab";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { ChangelogView } from "@/components/enhance/ChangelogView";
+import { AnalysisReportView } from "@/components/enhance/AnalysisReportView";
+import { WhatsNewCardList } from "@/components/enhance/WhatsNewCardList";
+import { ChangeReviewCard } from "@/components/enhance/ChangeReviewCard";
 import { useCurriculumStore } from "@/lib/store/curriculum-store";
 
 export default function EnhanceReviewPage() {
@@ -15,11 +19,16 @@ export default function EnhanceReviewPage() {
     analysisReportRaw,
     analysisReportStructured,
     whatsNewContent,
+    whatsNewItems,
     changes,
     changelog,
     setAnalysisReportRaw,
     setWhatsNewContent,
   } = store;
+
+  const [showRawAnalysis, setShowRawAnalysis] = useState(false);
+  const [showRawWhatsNew, setShowRawWhatsNew] = useState(false);
+  const [showRawChanges, setShowRawChanges] = useState(false);
 
   if (!analysisReportStructured) {
     return (
@@ -36,6 +45,8 @@ export default function EnhanceReviewPage() {
   const changesContent = approvedChanges
     .map((c) => `## ${c.title}\n\n${c.after}`)
     .join("\n\n---\n\n");
+
+  const selectedWhatsNew = whatsNewItems?.filter((i) => i.selected) ?? [];
 
   return (
     <div>
@@ -80,32 +91,91 @@ export default function EnhanceReviewPage() {
           <TabsTrigger value="changelog">Changelog</TabsTrigger>
         </TabsList>
 
+        {/* Analysis Tab */}
         <TabsContent value="analysis">
-          <EditableTab
-            content={analysisReportRaw ?? ""}
-            onSave={setAnalysisReportRaw}
-            label="Analysis"
-          />
-        </TabsContent>
-
-        <TabsContent value="whats-new">
-          <EditableTab
-            content={whatsNewContent ?? ""}
-            onSave={setWhatsNewContent}
-            label="What's New"
-          />
-        </TabsContent>
-
-        <TabsContent value="changes">
-          {changesContent ? (
+          <div className="flex justify-end mb-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowRawAnalysis(!showRawAnalysis)}
+            >
+              {showRawAnalysis ? "Structured View" : "Edit Raw"}
+            </Button>
+          </div>
+          {showRawAnalysis ? (
             <EditableTab
-              content={changesContent}
-              onSave={() => {
-                // Changes are individually managed; editing the combined view
-                // is display-only in this context
-              }}
-              label="Changes"
+              content={analysisReportRaw ?? ""}
+              onSave={setAnalysisReportRaw}
+              label="Analysis"
             />
+          ) : (
+            <AnalysisReportView report={analysisReportStructured} readOnly />
+          )}
+        </TabsContent>
+
+        {/* What's New Tab */}
+        <TabsContent value="whats-new">
+          <div className="flex justify-end mb-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowRawWhatsNew(!showRawWhatsNew)}
+            >
+              {showRawWhatsNew ? "Structured View" : "Edit Raw"}
+            </Button>
+          </div>
+          {showRawWhatsNew ? (
+            <EditableTab
+              content={whatsNewContent ?? ""}
+              onSave={setWhatsNewContent}
+              label="What's New"
+            />
+          ) : selectedWhatsNew.length > 0 ? (
+            <WhatsNewCardList items={selectedWhatsNew} readOnly />
+          ) : (
+            <EditableTab
+              content={whatsNewContent ?? ""}
+              onSave={setWhatsNewContent}
+              label="What's New"
+            />
+          )}
+        </TabsContent>
+
+        {/* Changes Tab */}
+        <TabsContent value="changes">
+          <div className="flex justify-end mb-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowRawChanges(!showRawChanges)}
+            >
+              {showRawChanges ? "Card View" : "Edit Raw"}
+            </Button>
+          </div>
+          {showRawChanges ? (
+            changesContent ? (
+              <EditableTab
+                content={changesContent}
+                onSave={() => {}}
+                label="Changes"
+              />
+            ) : (
+              <div className="py-10 text-center text-muted-foreground">
+                No approved changes yet.
+              </div>
+            )
+          ) : approvedChanges.length > 0 ? (
+            <div className="space-y-4">
+              {approvedChanges.map((change) => (
+                <ChangeReviewCard
+                  key={change.id}
+                  change={change}
+                  onApprove={() => {}}
+                  onReject={() => {}}
+                  readOnly
+                />
+              ))}
+            </div>
           ) : (
             <div className="py-10 text-center text-muted-foreground">
               No approved changes yet.
@@ -113,6 +183,7 @@ export default function EnhanceReviewPage() {
           )}
         </TabsContent>
 
+        {/* Changelog Tab */}
         <TabsContent value="changelog">
           <div className="rounded-lg border p-6 bg-card">
             <ChangelogView entries={changelog} />

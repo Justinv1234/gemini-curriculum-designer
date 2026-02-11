@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,8 @@ interface ChangeReviewCardProps {
   isStreaming?: boolean;
   onApprove: (id: string) => void;
   onReject: (id: string) => void;
+  onRegenerate?: (id: string, feedback: string) => void;
+  readOnly?: boolean;
 }
 
 export function ChangeReviewCard({
@@ -28,11 +31,14 @@ export function ChangeReviewCard({
   isStreaming,
   onApprove,
   onReject,
+  onRegenerate,
+  readOnly,
 }: ChangeReviewCardProps) {
+  const [feedbackText, setFeedbackText] = useState(change.feedback ?? "");
   const showContent = isStreaming ? streamedContent : change.after;
 
   return (
-    <Card className="mb-4">
+    <Card className={`mb-4 ${change.status === "rejected" ? "opacity-60" : ""}`}>
       <CardContent className="pt-4 pb-4">
         <div className="flex items-center justify-between mb-3">
           <h4 className="font-semibold">{change.title}</h4>
@@ -73,7 +79,7 @@ export function ChangeReviewCard({
           </div>
         )}
 
-        {change.status === "generated" && (
+        {!readOnly && change.status === "generated" && (
           <div className="flex gap-2 justify-end">
             <Button
               variant="outline"
@@ -85,6 +91,34 @@ export function ChangeReviewCard({
             <Button size="sm" onClick={() => onApprove(change.id)}>
               Approve
             </Button>
+          </div>
+        )}
+
+        {/* Rejected: show feedback + regenerate */}
+        {!readOnly && change.status === "rejected" && onRegenerate && (
+          <div className="mt-3 space-y-2">
+            <textarea
+              value={feedbackText}
+              onChange={(e) => setFeedbackText(e.target.value)}
+              placeholder="What should be different? (optional)"
+              className="w-full rounded-md border px-3 py-2 text-sm bg-background resize-none"
+              rows={2}
+            />
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onApprove(change.id)}
+              >
+                Approve Instead
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => onRegenerate(change.id, feedbackText)}
+              >
+                Regenerate{feedbackText.trim() ? " with Feedback" : ""}
+              </Button>
+            </div>
           </div>
         )}
       </CardContent>

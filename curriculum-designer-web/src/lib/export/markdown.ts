@@ -31,8 +31,45 @@ function buildCreateExportFiles(state: CurriculumStore): ExportFile[] {
     });
   }
 
-  // Topic landscape / research
-  if (state.topicLandscape) {
+  // Topic landscape / research — prefer structured data (only included items)
+  if (state.topicLandscapeStructured) {
+    const ls = state.topicLandscapeStructured;
+    let content = `# ${topic} - Topic Landscape & Resources\n\n`;
+
+    const includedTrends = ls.trends.filter((t) => t.included);
+    if (includedTrends.length > 0) {
+      content += `## Current Trends\n`;
+      for (const t of includedTrends) {
+        content += `- **${t.name}**: ${t.description}\n`;
+      }
+      content += `\n`;
+    }
+
+    const includedTools = ls.tools.filter((t) => t.included);
+    if (includedTools.length > 0) {
+      content += `## Essential Tools & Technologies\n`;
+      for (const t of includedTools) {
+        content += `- **${t.name}**${t.category ? ` (${t.category})` : ""}: ${t.description}\n`;
+      }
+      content += `\n`;
+    }
+
+    const includedResources = ls.resources.filter((r) => r.included);
+    if (includedResources.length > 0) {
+      content += `## Recommended Resources\n`;
+      for (const r of includedResources) {
+        content += `- **${r.title}** [${r.type}]: ${r.description}\n`;
+      }
+      content += `\n`;
+    }
+
+    if (ls.industryContext) {
+      content += `## Industry Context\n${ls.industryContext}\n`;
+    }
+
+    files.push({ name: "resources.md", content });
+  } else if (state.topicLandscape) {
+    // Fallback to raw markdown
     files.push({
       name: "resources.md",
       content: `# ${topic} - Topic Landscape & Resources\n\n${state.topicLandscape}`,

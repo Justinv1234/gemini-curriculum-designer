@@ -5,14 +5,18 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { StreamingText } from "@/components/shared/StreamingText";
+import { WhatsNewCardList } from "@/components/enhance/WhatsNewCardList";
 import { useCurriculumStore } from "@/lib/store/curriculum-store";
+import { parseWhatsNewJSON, stripJSONBlocks } from "@/lib/parsers";
 
 export default function EnhanceStep2Page() {
   const router = useRouter();
   const {
     analysisReportStructured,
     whatsNewContent,
+    whatsNewItems,
     setWhatsNewContent,
+    setWhatsNewItems,
     setEnhancePhase,
   } = useCurriculumStore();
 
@@ -66,13 +70,20 @@ export default function EnhanceStep2Page() {
         }
       }
 
-      setWhatsNewContent(fullContent);
+      // Parse structured items from the response
+      const items = parseWhatsNewJSON(fullContent);
+      const cleanContent = stripJSONBlocks(fullContent);
+
+      setWhatsNewContent(cleanContent);
+      if (items) {
+        setWhatsNewItems(items);
+      }
     } catch (error) {
       console.error("What's New error:", error);
     } finally {
       setIsStreaming(false);
     }
-  }, [analysisReportStructured, setWhatsNewContent]);
+  }, [analysisReportStructured, setWhatsNewContent, setWhatsNewItems]);
 
   const handleContinue = () => {
     setEnhancePhase(2);
@@ -130,20 +141,36 @@ export default function EnhanceStep2Page() {
         disabled={isStreaming}
         size="lg"
       >
-        {isStreaming ? "Researching..." : "Research Updates"}
+        {isStreaming ? "Researching..." : whatsNewContent ? "Re-research" : "Research Updates"}
       </Button>
 
-      {hasContent && (
+      {/* Show streaming content while streaming */}
+      {isStreaming && streamedContent && (
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold mb-4">Researching...</h2>
+          <div className="rounded-lg border p-6 bg-card">
+            <StreamingText content={streamedContent} isStreaming={true} />
+          </div>
+        </div>
+      )}
+
+      {/* After streaming: show cards if parsed, fallback to raw */}
+      {!isStreaming && hasContent && (
         <div className="mt-8">
           <h2 className="text-xl font-semibold mb-4">Recent Developments</h2>
-          <div className="rounded-lg border p-6 bg-card">
-            <StreamingText
-              content={streamedContent || whatsNewContent || ""}
-              isStreaming={isStreaming}
-            />
-          </div>
 
-          {!isStreaming && whatsNewContent && (
+          {whatsNewItems && whatsNewItems.length > 0 ? (
+            <WhatsNewCardList items={whatsNewItems} />
+          ) : (
+            <div className="rounded-lg border p-6 bg-card">
+              <StreamingText
+                content={whatsNewContent || ""}
+                isStreaming={false}
+              />
+            </div>
+          )}
+
+          {whatsNewContent && (
             <div className="mt-6">
               <Button onClick={handleContinue} size="lg">
                 Continue to Enhancements

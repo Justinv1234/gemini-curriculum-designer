@@ -140,6 +140,13 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="border-t py-6">
+        <div className="mx-auto max-w-6xl px-4 text-center text-sm text-muted-foreground">
+          Developed and designed by Dr. Weihao Qu, CSSE Department, Monmouth University
+        </div>
+      </footer>
     </div>
   );
 }

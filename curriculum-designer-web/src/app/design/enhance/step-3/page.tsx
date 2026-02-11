@@ -13,6 +13,7 @@ export default function EnhanceStep3Page() {
   const {
     analysisReportStructured,
     whatsNewContent,
+    whatsNewItems,
     enhancementProposals,
     setEnhancementProposals,
     setEnhancePhase,
@@ -32,6 +33,7 @@ export default function EnhanceStep3Page() {
         body: JSON.stringify({
           analysisReport: analysisReportStructured,
           whatsNewContent,
+          whatsNewItems,
         }),
       });
 
@@ -52,7 +54,7 @@ export default function EnhanceStep3Page() {
     } finally {
       setIsLoading(false);
     }
-  }, [analysisReportStructured, whatsNewContent, setEnhancementProposals]);
+  }, [analysisReportStructured, whatsNewContent, whatsNewItems, setEnhancementProposals]);
 
   const handleContinue = () => {
     setEnhancePhase(3);

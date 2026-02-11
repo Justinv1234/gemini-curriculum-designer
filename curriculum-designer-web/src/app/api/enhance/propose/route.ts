@@ -1,14 +1,15 @@
 import { getAnthropicClient } from "@/lib/claude/client";
 import { ENHANCE_SYSTEM_PROMPT, MODEL } from "@/lib/claude/prompts";
 import { buildEnhancementProposalsPrompt } from "@/lib/claude/enhance";
-import type { AnalysisReport } from "@/lib/types/curriculum";
+import type { AnalysisReport, WhatsNewItem } from "@/lib/types/curriculum";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { analysisReport, whatsNewContent } = body as {
+    const { analysisReport, whatsNewContent, whatsNewItems } = body as {
       analysisReport: AnalysisReport;
       whatsNewContent: string;
+      whatsNewItems?: WhatsNewItem[] | null;
     };
 
     if (!analysisReport || !whatsNewContent) {
@@ -18,7 +19,8 @@ export async function POST(req: Request) {
     const client = getAnthropicClient();
     const userPrompt = buildEnhancementProposalsPrompt(
       analysisReport,
-      whatsNewContent
+      whatsNewContent,
+      whatsNewItems
     );
 
     const message = await client.messages.create({

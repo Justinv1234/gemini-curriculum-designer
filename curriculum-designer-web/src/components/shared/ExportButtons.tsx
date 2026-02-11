@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useCurriculumStore } from "@/lib/store/curriculum-store";
 import { buildExportFiles, createMarkdownZip } from "@/lib/export/markdown";
-import { createPdfFromMarkdown } from "@/lib/export/pdf";
+import { buildSlideDeck, buildSlideMeta } from "@/lib/export/slides";
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -19,8 +19,7 @@ function downloadBlob(blob: Blob, filename: string) {
 
 export function ExportButtons() {
   const store = useCurriculumStore();
-  const [exporting, setExporting] = useState<"md" | "pdf" | null>(null);
-  const [pdfError, setPdfError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState<"md" | "slides" | null>(null);
 
   const files = buildExportFiles(store);
   const hasContent = files.length > 0;
@@ -35,42 +34,36 @@ export function ExportButtons() {
     }
   };
 
-  const handlePdfExport = async () => {
-    setExporting("pdf");
-    setPdfError(null);
+  const handleSlidesExport = () => {
+    setExporting("slides");
     try {
-      const blob = await createPdfFromMarkdown(files);
-      downloadBlob(blob, "curriculum-pdf.zip");
-    } catch (err) {
-      console.error("PDF export error:", err);
-      setPdfError(
-        "PDF export failed. Try downloading Markdown instead."
-      );
+      const meta = buildSlideMeta(store);
+      const html = buildSlideDeck(files, meta);
+      const blob = new Blob([html], { type: "text/html" });
+      const name = store.mode === "enhance"
+        ? "enhancement-report-slides.html"
+        : "curriculum-slides.html";
+      downloadBlob(blob, name);
     } finally {
       setExporting(null);
     }
   };
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex gap-3">
-        <Button
-          onClick={handleMarkdownExport}
-          disabled={!hasContent || exporting !== null}
-          variant="outline"
-        >
-          {exporting === "md" ? "Exporting..." : "Download Markdown (.zip)"}
-        </Button>
-        <Button
-          onClick={handlePdfExport}
-          disabled={!hasContent || exporting !== null}
-        >
-          {exporting === "pdf" ? "Exporting..." : "Download PDF (.zip)"}
-        </Button>
-      </div>
-      {pdfError && (
-        <p className="text-sm text-destructive">{pdfError}</p>
-      )}
+    <div className="flex gap-3">
+      <Button
+        onClick={handleMarkdownExport}
+        disabled={!hasContent || exporting !== null}
+        variant="outline"
+      >
+        {exporting === "md" ? "Exporting..." : "Download Markdown (.zip)"}
+      </Button>
+      <Button
+        onClick={handleSlidesExport}
+        disabled={!hasContent || exporting !== null}
+      >
+        {exporting === "slides" ? "Exporting..." : "Download Slides (.html)"}
+      </Button>
     </div>
   );
 }

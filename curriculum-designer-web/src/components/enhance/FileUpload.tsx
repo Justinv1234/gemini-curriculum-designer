@@ -7,12 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { useCurriculumStore } from "@/lib/store/curriculum-store";
 import { generateId } from "@/lib/parsers";
 
-const MAX_FILE_SIZE = 200 * 1024; // 200KB
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const ACCEPTED_EXTENSIONS = [".md", ".txt", ".pdf", ".docx"];
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
-  return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export function FileUpload() {
@@ -28,7 +29,7 @@ export function FileUpload() {
 
       if (file.size > MAX_FILE_SIZE) {
         setError(
-          `"${file.name}" exceeds the 200KB limit (${formatFileSize(file.size)}). Try a smaller file.`
+          `"${file.name}" exceeds the 2MB limit (${formatFileSize(file.size)}). Try a smaller file.`
         );
         return;
       }
@@ -115,7 +116,7 @@ export function FileUpload() {
             {extracting ? "Extracting text..." : "Drop files here or click to browse"}
           </p>
           <p className="text-sm text-muted-foreground">
-            Accepts .md, .txt, .pdf, .docx (max 200KB each)
+            Accepts .md, .txt, .pdf, .docx (max 2MB each)
           </p>
           <p className="text-xs text-muted-foreground mt-1">
             Have a .pptx? Export it as PDF first.

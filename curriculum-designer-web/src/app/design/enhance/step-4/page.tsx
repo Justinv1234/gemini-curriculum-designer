@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ChangeReviewCard } from "@/components/enhance/ChangeReviewCard";
@@ -19,6 +19,7 @@ export default function EnhanceStep4Page() {
     changelog,
     setChanges,
     updateChange,
+    setChangeFeedback,
     addChangelogEntry,
     setEnhancePhase,
   } = useCurriculumStore();
@@ -26,6 +27,7 @@ export default function EnhanceStep4Page() {
   const [activeStreamId, setActiveStreamId] = useState<string | null>(null);
   const [streamedContent, setStreamedContent] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const autoTriggered = useRef(false);
 
   const selectedProposals = enhancementProposals.filter((p) => p.selected);
 
@@ -125,6 +127,109 @@ export default function EnhanceStep4Page() {
     updateChange,
   ]);
 
+  // Auto-trigger generation on mount
+  useEffect(() => {
+    if (
+      !autoTriggered.current &&
+      changes.length === 0 &&
+      selectedProposals.length > 0 &&
+      analysisReportStructured &&
+      whatsNewContent
+    ) {
+      autoTriggered.current = true;
+      handleGenerateAll();
+    }
+  }, [changes.length, selectedProposals.length, analysisReportStructured, whatsNewContent, handleGenerateAll]);
+
+  const handleRegenerate = useCallback(
+    async (id: string, feedback: string) => {
+      if (!analysisReportStructured || !whatsNewContent) return;
+      if (isGenerating) return;
+
+      const change = changes.find((c) => c.id === id);
+      if (!change) return;
+
+      const proposal = enhancementProposals.find(
+        (p) => p.id === change.enhancementId
+      );
+      if (!proposal) return;
+
+      // Save the feedback
+      if (feedback.trim()) {
+        setChangeFeedback(id, feedback);
+      }
+
+      // Mark as generating
+      updateChange(id, { status: "generating" });
+      setActiveStreamId(id);
+      setStreamedContent("");
+      setIsGenerating(true);
+
+      try {
+        const response = await fetch("/api/enhance/update", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            proposal,
+            analysisReport: analysisReportStructured,
+            whatsNewContent,
+            feedback: feedback.trim() || undefined,
+          }),
+        });
+
+        if (!response.ok) throw new Error("Regeneration failed");
+
+        const reader = response.body?.getReader();
+        if (!reader) throw new Error("No reader");
+
+        const decoder = new TextDecoder();
+        let fullContent = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split("\n");
+
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const data = line.slice(6);
+              if (data === "[DONE]") continue;
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.text) {
+                  fullContent += parsed.text;
+                  setStreamedContent(fullContent);
+                }
+              } catch {
+                // Skip invalid JSON
+              }
+            }
+          }
+        }
+
+        const changeData = parseChangeJSON(fullContent, proposal.id);
+        const cleanContent = stripJSONBlocks(fullContent);
+
+        updateChange(id, {
+          after: cleanContent,
+          before: changeData?.before ?? undefined,
+          status: "generated",
+          feedback: feedback.trim() || undefined,
+        });
+      } catch (error) {
+        console.error("Regeneration error:", error);
+        updateChange(id, { status: "generated", after: "Error regenerating update." });
+      }
+
+      setActiveStreamId(null);
+      setStreamedContent("");
+      setIsGenerating(false);
+    },
+    [analysisReportStructured, whatsNewContent, changes, enhancementProposals, isGenerating, updateChange, setChangeFeedback]
+  );
+
   const handleApprove = useCallback(
     (id: string) => {
       const change = changes.find((c) => c.id === id);
@@ -179,18 +284,10 @@ export default function EnhanceStep4Page() {
     <div>
       <h1 className="text-2xl font-bold mb-2">Step 4: Apply Changes</h1>
       <p className="text-muted-foreground mb-8">
-        Generate and review changes for each selected enhancement.
+        Review each generated change — approve, reject, or regenerate with feedback.
       </p>
 
-      {changes.length === 0 ? (
-        <Button
-          onClick={handleGenerateAll}
-          disabled={isGenerating}
-          size="lg"
-        >
-          Generate All Updates
-        </Button>
-      ) : (
+      {changes.length > 0 ? (
         <div className="space-y-4">
           {changes.map((change) => (
             <ChangeReviewCard
@@ -202,8 +299,14 @@ export default function EnhanceStep4Page() {
               isStreaming={activeStreamId === change.id}
               onApprove={handleApprove}
               onReject={handleReject}
+              onRegenerate={handleRegenerate}
             />
           ))}
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="animate-pulse">&#x25CF;</span>
+          Starting generation...
         </div>
       )}
 
